@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+backend/venv/
+backend/*.db
+*.db
+
+# Node
+node_modules/
+.next/
+out/
+
+# Contracts
+contracts/artifacts/
+contracts/cache/
+contracts/node_modules/
+
+# Env
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+inbox/*.pdf
+inbox/*.png
+inbox/*.jpg
+inbox/*.csv
