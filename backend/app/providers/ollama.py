@@ -30,6 +30,16 @@ class OllamaProvider(BaseProvider):
         self.model = settings.ollama_model
 
     async def extract_invoice(self, content: bytes, mime_type: str) -> dict:
+        # Ollama vision models only accept images, not PDFs
+        if mime_type == "application/pdf":
+            import fitz
+            doc = fitz.open(stream=content, filetype="pdf")
+            page = doc[0]
+            pix = page.get_pixmap(dpi=200)
+            content = pix.tobytes("png")
+            mime_type = "image/png"
+            doc.close()
+
         b64 = base64.standard_b64encode(content).decode("utf-8")
 
         async with httpx.AsyncClient(timeout=120.0) as client:

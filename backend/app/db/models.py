@@ -77,7 +77,7 @@ class Settlement(Base):
     block_number = Column(Integer, nullable=True)
     amount = Column(Float, nullable=False)
     currency = Column(String, default="USD")
-    metadata = Column(JSON, nullable=True)
+    extra_data = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=utcnow)
     completed_at = Column(DateTime, nullable=True)
 
@@ -93,3 +93,5 @@ class AuditLog(Base):
     message = Column(Text, nullable=False)
     details = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=utcnow)
+
+    invoice = relationship("Invoice", back_populates="audit_logs")

@@ -44,6 +44,20 @@ async def process_invoice(file_path: str):
             await log_audit(session, None, "error", f"Failed to parse {filename}: {e}")
             return
 
+        # --- STAGE 4: VERIFY ---
+        # Math check (runs on raw data, before DB insert)
+        passed, msg = verify_math(data)
+        await log_audit(session, None, "verification_passed" if passed else "verification_failed", msg)
+        if not passed:
+            return
+
+        # Duplicate check (runs before DB insert to avoid self-match)
+        is_dup, msg = await check_duplicate(session, data["vendor_name"], data["invoice_id"])
+        if is_dup:
+            await log_audit(session, None, "verification_failed", msg)
+            return
+        await log_audit(session, None, "verification_passed", msg)
+
         # --- Store in DB ---
         try:
             invoice = Invoice(
@@ -59,7 +73,7 @@ async def process_invoice(file_path: str):
                 payment_rail=data["payment_route"]["rail"],
                 recipient=data["payment_route"]["recipient"],
                 source_file=filename,
-                status="parsed",
+                status="verified",
                 raw_extraction=data,
             )
             session.add(invoice)
@@ -82,24 +96,6 @@ async def process_invoice(file_path: str):
             return
 
         inv_id = invoice.id
-
-        # --- STAGE 4: VERIFY ---
-        # Math check
-        passed, msg = verify_math(data)
-        await log_audit(session, inv_id, "verification_passed" if passed else "verification_failed", msg)
-        if not passed:
-            invoice.status = "failed_verification"
-            await session.commit()
-            return
-
-        # Duplicate check
-        is_dup, msg = await check_duplicate(session, data["vendor_name"], data["invoice_id"])
-        if is_dup:
-            await log_audit(session, inv_id, "verification_failed", msg)
-            invoice.status = "failed_verification"
-            await session.commit()
-            return
-        await log_audit(session, inv_id, "verification_passed", msg)
 
         # Budget check
         passed, needs_approval, msg = await check_budget(session, data["vendor_name"], data["total_amount"])
@@ -151,7 +147,7 @@ async def process_invoice(file_path: str):
                 block_number=result.get("block_number"),
                 amount=invoice.total_amount,
                 currency=invoice.currency,
-                metadata=result.get("metadata"),
+                extra_data=result.get("metadata"),
                 completed_at=datetime.now(timezone.utc) if result["status"] == "completed" else None,
             )
             session.add(settlement)

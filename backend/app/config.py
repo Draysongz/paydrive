@@ -7,10 +7,12 @@ class Settings(BaseSettings):
     inbox_path: str = str(Path(__file__).parent.parent.parent / "inbox")
     database_url: str = "sqlite+aiosqlite:///./paydrive.db"
 
-    # AI Provider: claude | openai | ollama
+    # AI Provider: claude | openai | groq | ollama
     ai_provider: str = "claude"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    groq_api_key: str = ""
+    groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llava"
 
@@ -42,7 +44,10 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins: str = "http://localhost:3000"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": [".env", str(Path(__file__).parent.parent.parent / ".env")],
+        "env_file_encoding": "utf-8",
+    }
 
 
 settings = Settings()
